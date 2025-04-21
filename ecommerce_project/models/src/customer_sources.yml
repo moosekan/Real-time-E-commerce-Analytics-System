@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: PUBLIC
+    database: ECOMMERCE_DB
+    schema: PUBLIC
+    tables:
+      - name: CUSTOMER_ANALYSIS

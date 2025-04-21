@@ -1,0 +1,2 @@
+SELECT *
+FROM {{ source('PUBLIC', 'CUSTOMER_ANALYSIS') }}

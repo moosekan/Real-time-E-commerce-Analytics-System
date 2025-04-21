@@ -23,3 +23,8 @@ docker run -d --name kafka --network kafka-net \
 
 
 helpful debug github issue: https://github.com/databricks/spark-redshift/issues/244#issuecomment-347082455
+
+
+Installations 
+brew install apache-spark
+brew install openjdk@11 
