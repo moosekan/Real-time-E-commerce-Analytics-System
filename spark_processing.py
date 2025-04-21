@@ -15,6 +15,17 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
+sfOptions = {
+    "sfURL": os.getenv("SNOWFLAKE_URL"),
+    "sfUser": os.getenv("SNOWFLAKE_USER"),
+    "sfPassword": os.getenv("SNOWFLAKE_PASSWORD"),
+    "sfDatabase": os.getenv("SNOWFLAKE_DATABASE"),
+    "sfSchema": os.getenv("SNOWFLAKE_SCHEMA"),
+    "sfWarehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
+    "sfRole": os.getenv("SNOWFLAKE_ROLE")
+}
+
+print(sfOptions)
 
 def analyze_sentiment(text):
     if text:
@@ -40,7 +51,7 @@ spark = SparkSession.builder \
 
 spark.sparkContext.setLogLevel("ERROR")
             
-kafka_bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9093')
 # kafka_topic = os.getenv('KAFKA_TOPIC', '
 # erce_customers')
 # Read data from 'ecommerce_customers' topic
@@ -319,50 +330,121 @@ retentionDF = retentionDF.withColumn("@timestamp", date_format(col("processingTi
 
 
 # Wait for any of the streams to finish
+# customerAnalysisDF.writeStream \
+#     .outputMode("update") \
+#     .format("org.elasticsearch.spark.sql") \
+#     .option("checkpointLocation", "/tmp/spark/checkpoints/customeranalysis_analysis") \
+#     .option("es.nodes", "localhost") \
+#     .option("es.port", "9200") \
+#     .option("es.resource", "customeranalysis_index") \
+#     .option("es.mapping.id", "unique_id") \
+#     .start() 
+# productAnalysisDF.writeStream \
+#     .outputMode("update") \
+#     .format("org.elasticsearch.spark.sql") \
+#     .option("checkpointLocation", "/tmp/spark/checkpoints/productanalysis_analysis") \
+#     .option("es.nodes", "localhost") \
+#     .option("es.port", "9200") \
+#     .option("es.resource", "productanalysis_index") \
+#     .option("es.mapping.id", "unique_id") \
+#     .start()
+# reviewsDF.writeStream \
+#     .outputMode("append") \
+#     .format("org.elasticsearch.spark.sql") \
+#     .option("checkpointLocation", "/tmp/spark/checkpoints/review_analysis") \
+#     .option("es.nodes", "localhost") \
+#     .option("es.port", "9200") \
+#     .option("es.resource", "review_index") \
+#     .start()
+# retentionDF.writeStream \
+#     .outputMode("update") \
+#     .format("org.elasticsearch.spark.sql") \
+#     .option("checkpointLocation", "/tmp/spark/checkpoints/retention_analysis") \
+#     .option("es.nodes", "localhost") \
+#     .option("es.port", "9200") \
+#     .option("es.resource", "retention_index") \
+#     .option("es.mapping.id", "unique_id") \
+#     .start()
+# lowStockDF.writeStream \
+#     .outputMode("update") \
+#     .format("org.elasticsearch.spark.sql") \
+#     .option("checkpointLocation", "/tmp/spark/checkpoints/lowstock_analysis") \
+#     .option("es.nodes", "localhost") \
+#     .option("es.port", "9200") \
+#     .option("es.resource", "lowstock_index") \
+#     .option("es.mapping.id", "unique_id") \
+#     .start() 
+
+# top20CustomersDF.writeStream.format("console").outputMode("complete").start().awaitTermination()
+
+# spark.streams.awaitAnyTermination()
+
+
+
 customerAnalysisDF.writeStream \
+    .foreachBatch(lambda df, epoch_id:
+        df.write
+          .format("snowflake")
+          .options(**sfOptions)
+          .option("dbtable", "CUSTOMER_ANALYSIS")
+          .mode("append")
+          .save()
+    ) \
     .outputMode("update") \
-    .format("org.elasticsearch.spark.sql") \
-    .option("checkpointLocation", "/tmp/spark/checkpoints/customeranalysis_analysis") \
-    .option("es.nodes", "localhost") \
-    .option("es.port", "9200") \
-    .option("es.resource", "customeranalysis_index") \
-    .option("es.mapping.id", "unique_id") \
-    .start() 
+    .option("checkpointLocation", "/tmp/spark/checkpoints/customer_sf") \
+    .start()
+
 productAnalysisDF.writeStream \
+    .foreachBatch(lambda df, epoch_id:
+        df.write
+          .format("snowflake")
+          .options(**sfOptions)
+          .option("dbtable", "PRODUCT_ANALYSIS")
+          .mode("append")
+          .save()
+    ) \
     .outputMode("update") \
-    .format("org.elasticsearch.spark.sql") \
-    .option("checkpointLocation", "/tmp/spark/checkpoints/productanalysis_analysis") \
-    .option("es.nodes", "localhost") \
-    .option("es.port", "9200") \
-    .option("es.resource", "productanalysis_index") \
-    .option("es.mapping.id", "unique_id") \
+    .option("checkpointLocation", "/tmp/spark/checkpoints/product_sf") \
     .start()
+
 reviewsDF.writeStream \
+    .foreachBatch(lambda df, epoch_id:
+        df.write
+          .format("snowflake")
+          .options(**sfOptions)
+          .option("dbtable", "REVIEW_SENTIMENTS")
+          .mode("append")
+          .save()
+    ) \
     .outputMode("append") \
-    .format("org.elasticsearch.spark.sql") \
-    .option("checkpointLocation", "/tmp/spark/checkpoints/review_analysis") \
-    .option("es.nodes", "localhost") \
-    .option("es.port", "9200") \
-    .option("es.resource", "review_index") \
+    .option("checkpointLocation", "/tmp/spark/checkpoints/reviews_sf") \
     .start()
+
 retentionDF.writeStream \
+    .foreachBatch(lambda df, epoch_id:
+        df.write
+          .format("snowflake")
+          .options(**sfOptions)
+          .option("dbtable", "CUSTOMER_RETENTION")
+          .mode("append")
+          .save()
+    ) \
     .outputMode("update") \
-    .format("org.elasticsearch.spark.sql") \
-    .option("checkpointLocation", "/tmp/spark/checkpoints/retention_analysis") \
-    .option("es.nodes", "localhost") \
-    .option("es.port", "9200") \
-    .option("es.resource", "retention_index") \
-    .option("es.mapping.id", "unique_id") \
+    .option("checkpointLocation", "/tmp/spark/checkpoints/retention_sf") \
     .start()
+
 lowStockDF.writeStream \
+    .foreachBatch(lambda df, epoch_id:
+        df.write
+          .format("snowflake")
+          .options(**sfOptions)
+          .option("dbtable", "LOW_STOCK_ALERTS")
+          .mode("append")
+          .save()
+    ) \
     .outputMode("update") \
-    .format("org.elasticsearch.spark.sql") \
-    .option("checkpointLocation", "/tmp/spark/checkpoints/lowstock_analysis") \
-    .option("es.nodes", "localhost") \
-    .option("es.port", "9200") \
-    .option("es.resource", "lowstock_index") \
-    .option("es.mapping.id", "unique_id") \
-    .start() 
+    .option("checkpointLocation", "/tmp/spark/checkpoints/lowstock_sf") \
+    .start()
 
 top20CustomersDF.writeStream.format("console").outputMode("complete").start().awaitTermination()
 

@@ -1,0 +1,25 @@
+# Create a Docker network (if not already created)
+docker network create kafka-net
+
+# Start Zookeeper
+docker run -d --name zookeeper --network kafka-net \
+  -e ZOOKEEPER_CLIENT_PORT=2181 \
+  confluentinc/cp-zookeeper:latest
+
+# Start Kafka on port 9093
+docker run -d --name kafka --network kafka-net \
+  -e KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181 \
+  -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9093 \
+  -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT \
+  -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9093 \
+  -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+  -p 9093:9093 \
+  confluentinc/cp-kafka:latest
+
+
+/opt/homebrew/opt/apache-spark/bin/spark-submit \
+  --packages net.snowflake:spark-snowflake_2.12:2.11.0-spark_3.1,org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 \
+  spark_processing.py
+
+
+helpful debug github issue: https://github.com/databricks/spark-redshift/issues/244#issuecomment-347082455

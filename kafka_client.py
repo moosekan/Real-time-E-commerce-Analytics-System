@@ -8,7 +8,7 @@ from kafka.errors import KafkaError, TopicAlreadyExistsError
 
 load_dotenv()
 
-kafka_broker = os.getenv('KAFKA_BROKER', 'localhost:9092')
+kafka_broker = os.getenv('KAFKA_BROKER', 'localhost:9093')
 
 try:
     print(f"Connecting to Kafka broker at: {kafka_broker}")
