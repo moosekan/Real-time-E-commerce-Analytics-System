@@ -1,7 +1,7 @@
 # Real-time-E-commerce-Analytics-System
 This repository contains the code for a robust data pipeline integrating Kafka, PySpark, ElasticSearch, and Grafana to achieve real-time analytics for an e-commerce platform
 
-![E-commerce Pipeline Architecture](Images/System_Design.png)
+![E-commerce Pipeline Architecture](Images/Flowchart.jpeg)
 ![E-commerce Pipeline Architecture](Images/Exp_Results.png)
 ![E-commerce Pipeline Architecture](Images/Grafana_Output.png)
 
